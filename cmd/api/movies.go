@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/med-IDBENOUAKRIM/lets_go/internal/data"
+	"github.com/med-IDBENOUAKRIM/lets_go/internal/validator"
 )
 
 func (app *Application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +21,19 @@ func (app *Application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+	movie := &data.Movie{
+		Title:   input.Title,
+		Year:    input.Year,
+		Runtime: input.Runtime,
+		Genres:  input.Genres,
+	}
+	data.ValidateMovie(v, movie)
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
