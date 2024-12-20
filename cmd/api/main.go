@@ -5,21 +5,20 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/med-IDBENOUAKRIM/lets_go/cmd/utils"
 )
 
 const version = "1.0.0"
 
 type Config struct {
-	port int
-	env  string
-	db   struct {
+	env string
+	db  struct {
 		dsn string
 	}
 }
@@ -32,9 +31,13 @@ type Application struct {
 func main() {
 	var cfg Config
 
-	flag.IntVar(&cfg.port, "port", 4000, "API server port")
+	utils.LoadConfig()
+	port := os.Getenv("SERVER_ADDRESS")
+	dbSource := os.Getenv("DB_SOURCE")
+
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "postgres://root:A12reE@localhost/greenlight", "PostgreSQL DSN")
+
+	flag.StringVar(&cfg.db.dsn, "db-dsn", dbSource, "PostgreSQL DSN")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -51,21 +54,15 @@ func main() {
 		config: cfg,
 		logger: logger,
 	}
-	// log.Println(cfg)
-
-	// mux := http.NewServeMux()
-	// mux.HandleFunc("/v1/healthcheck", app.healthcheckHandler)
 
 	srv := &http.Server{
-		Addr:         fmt.Sprintf("localhost:%d", cfg.port),
+		Addr:         fmt.Sprintf("localhost:%s", port),
 		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
-
-	log.Println(srv.Addr)
 
 	logger.Info("starting server", "addr", srv.Addr, "env", cfg.env)
 
