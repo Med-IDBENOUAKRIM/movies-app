@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/med-IDBENOUAKRIM/lets_go/internal/data"
@@ -37,7 +36,6 @@ func (app *Application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
-	log.Println("--->  ", movie)
 
 	err = app.models.Movies.InsertMovie(movie)
 	if err != nil {
@@ -77,5 +75,55 @@ func (app *Application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *Application) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil || id < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
 
+	movie, err := app.models.Movies.GetMovieById(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	var input struct {
+		Title   string       `json:"title"`
+		Year    int32        `json:"year"`
+		Runtime data.Runtime `json:"runtime"`
+		Genres  []string     `json:"genres"`
+	}
+
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	movie.Title = input.Title
+	movie.Year = input.Year
+	movie.Runtime = input.Runtime
+	movie.Genres = input.Genres
+	v := validator.New()
+
+	data.ValidateMovie(v, movie)
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	err = app.models.Movies.UpdateMovie(movie)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"version": movie.Version}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }

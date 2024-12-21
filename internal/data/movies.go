@@ -3,7 +3,6 @@ package data
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/lib/pq"
@@ -51,16 +50,9 @@ func (m *MovieModel) InsertMovie(movie *Movie) error {
 		movie.Runtime,
 		pq.Array(movie.Genres),
 	}
-	log.Println(movie)
-	// ! 149
-	// newMovie := Movie{
-	// 	Title:   movie.Title,
-	// 	Year:    movie.Year,
-	// 	Runtime: movie.Runtime,
-	// 	Genres:  pq.StringArray(movie.Genres),
-	// }
+
 	return m.DB.QueryRow(query, args...).Scan(&movie.ID, &movie.CreatedAt, &movie.Version)
-	// return nil
+
 }
 
 func (m *MovieModel) GetMovieById(id int64) (*Movie, error) {
@@ -83,7 +75,15 @@ func (m *MovieModel) GetMovieById(id int64) (*Movie, error) {
 }
 
 func (m *MovieModel) UpdateMovie(movie *Movie) error {
-	return nil
+	query := `UPDATE movies SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1 WHERE id = $5 RETURNING version`
+	args := []any{
+		movie.Title,
+		movie.Year,
+		movie.Runtime,
+		pq.Array(movie.Genres),
+		movie.ID,
+	}
+	return m.DB.QueryRow(query, args...).Scan(&movie.Version)
 }
 
 func (m *MovieModel) DeleteMovie(id int64) error {
