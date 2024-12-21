@@ -1,6 +1,7 @@
 package data
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/med-IDBENOUAKRIM/lets_go/internal/validator"
@@ -33,4 +34,24 @@ func ValidateMovie(v *validator.Validator, movie *Movie) {
 	v.Check(len(movie.Genres) >= 1, "genres", "must contain at least 1 genre")
 	v.Check(len(movie.Genres) <= 5, "genres", "must not contain more than 5 genres")
 	v.Check(validator.Unique(movie.Genres), "genres", "must NOT contain duplicate values")
+}
+
+type MovieModel struct {
+	DB *sql.DB
+}
+
+func (m *MovieModel) InsertMovie(movie *Movie) error {
+	return nil
+}
+
+func (m *MovieModel) GetMovieById(id int64) (*Movie, error) {
+	return nil, nil
+}
+
+func (m *MovieModel) UpdateMovie(movie *Movie) error {
+	return nil
+}
+
+func (m *MovieModel) DeleteMovie(id int64) error {
+	return nil
 }

@@ -12,6 +12,7 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/med-IDBENOUAKRIM/lets_go/cmd/utils"
+	"github.com/med-IDBENOUAKRIM/lets_go/internal/data"
 )
 
 const version = "1.0.0"
@@ -31,6 +32,7 @@ type Config struct {
 type Application struct {
 	config Config
 	logger *slog.Logger
+	models data.Models
 }
 
 func main() {
@@ -61,6 +63,7 @@ func main() {
 	app := &Application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{
