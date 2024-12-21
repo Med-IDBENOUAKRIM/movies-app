@@ -2,8 +2,11 @@ package data
 
 import (
 	"database/sql"
+	"errors"
+	"log"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/med-IDBENOUAKRIM/lets_go/internal/validator"
 )
 
@@ -41,11 +44,42 @@ type MovieModel struct {
 }
 
 func (m *MovieModel) InsertMovie(movie *Movie) error {
-	return nil
+	query := `INSERT INTO movies (title, year, runtime, genres) VALUES ($1, $2, $3, $4) RETURNING id, created_at, version`
+	args := []any{
+		movie.Title,
+		movie.Year,
+		movie.Runtime,
+		pq.Array(movie.Genres),
+	}
+	log.Println(movie)
+	// ! 149
+	// newMovie := Movie{
+	// 	Title:   movie.Title,
+	// 	Year:    movie.Year,
+	// 	Runtime: movie.Runtime,
+	// 	Genres:  pq.StringArray(movie.Genres),
+	// }
+	return m.DB.QueryRow(query, args...).Scan(&movie.ID, &movie.CreatedAt, &movie.Version)
+	// return nil
 }
 
 func (m *MovieModel) GetMovieById(id int64) (*Movie, error) {
-	return nil, nil
+	query := `SELECT id, title, created_at, year, runtime, genres, version FROM movies WHERE id = $1`
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+	var movie Movie
+	err := m.DB.QueryRow(query, id).Scan(&movie.ID, &movie.Title, &movie.CreatedAt, &movie.Year, &movie.Runtime, pq.Array(&movie.Genres), &movie.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &movie, nil
 }
 
 func (m *MovieModel) UpdateMovie(movie *Movie) error {

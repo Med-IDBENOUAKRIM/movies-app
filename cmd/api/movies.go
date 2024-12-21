@@ -1,9 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
-	"time"
 
 	"github.com/med-IDBENOUAKRIM/lets_go/internal/data"
 	"github.com/med-IDBENOUAKRIM/lets_go/internal/validator"
@@ -36,29 +37,45 @@ func (app *Application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
+	log.Println("--->  ", movie)
 
-	fmt.Fprintf(w, "%v\n", input)
+	err = app.models.Movies.InsertMovie(movie)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/movies/%d", movie.ID))
+	err = app.writeJSON(w, http.StatusCreated, envelope{"movie": movie}, headers)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 func (app *Application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		app.notFoundResponse(w, r)
 		return
 	}
 
-	data := data.Movie{
-		ID:        id,
-		Title:     "Casablanca",
-		Runtime:   102,
-		Genres:    []string{"drama", "romance", "war"},
-		Version:   1,
-		CreatedAt: time.Now(),
-		Year:      2000,
+	movie, err := app.models.Movies.GetMovieById(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"movie": data}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func (app *Application) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
+
 }
