@@ -4,9 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"time"
 
@@ -39,7 +37,6 @@ func main() {
 	var cfg Config
 
 	utils.LoadConfig()
-	port := os.Getenv("SERVER_ADDRESS")
 	dbSource := os.Getenv("DB_SOURCE")
 
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
@@ -66,18 +63,7 @@ func main() {
 		models: data.NewModels(db),
 	}
 
-	srv := &http.Server{
-		Addr:         fmt.Sprintf("localhost:%s", port),
-		Handler:      app.routes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
-	}
-
-	logger.Info("starting server", "addr", srv.Addr, "env", cfg.env)
-
-	err = srv.ListenAndServe()
+	err = app.serve()
 	logger.Error(err.Error())
 	os.Exit(1)
 }
