@@ -10,7 +10,7 @@ import (
 )
 
 func (app *Application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
-	// fmt.Fprintln(w, "create a new movie")
+
 	var input struct {
 		Title   string       `json:"title"`
 		Year    int32        `json:"year"`

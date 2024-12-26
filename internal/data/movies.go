@@ -21,8 +21,6 @@ type Movie struct {
 	CreatedAt time.Time `json:"-"`
 }
 
-// CreatedAt time.Time `json:"created_at"`
-
 func ValidateMovie(v *validator.Validator, movie *Movie) {
 	v.Check(movie.Title != "", "title", "title is required")
 	v.Check(len(movie.Title) <= 500, "title", "must not be more than 500 bytes long")
@@ -189,12 +187,3 @@ func (m *MovieModel) GetAllMovies(title string, genres []string, filters Filters
 
 	return movies, metadata, nil
 }
-
-// func (m *MovieModel) SearchMovies(title string) ([]*Movie, error) {
-
-// 	ctx, cancel := context.WithTimeout(context.Background(),3*time.Second)
-// 	defer cancel()
-
-// 	rows , err
-
-// }
